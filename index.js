@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const axios = require('axios'); // ใช้ axios แทน request
 
 // ใส่ค่าโทเค็นของคุณตรงนี้
-const PAGE_ACCESS_TOKEN = 'EAARffjvaCwoBO2WXe8qRvI7mrJh6V56hs73WUe68toiCIenxrTF3FX69jSqFM48WJa9JLZCWGJ0ZBncWk1fcVnHCdki3fxxCiEFJ4uGDEWZArg9qTJzuznh2rzNWsCceG5ZAWjbuqUoybwhcPEzNGBG8XjJUGxkxZAwM3RNEkNOGHwoW91EuTyIZCkOsD4fGfaWQZDZD'; // ใส่ Page Access Token ของคุณที่นี่
+const PAGE_ACCESS_TOKEN = 'EAARffjvaCwoBO9UuWZA7XRCJBbEcAgXTqRT7Ok0oItyKZBcqarowmHbwteydKFo6Vmq8SUyxnBED821rvTfrdIM8UBsKuzhNT2ZCKBTQSlUmOYC1ZC2vBMR7ApTk24K06woBaikVZC0PIvc3nuZBqPP3IRggzdp7gIUVGCmZAaNq8JOjnQpi1dlrqrppA6cNhunSwZDZD'; // ใส่ Page Access Token ของคุณที่นี่
 const VERIFY_TOKEN = 'zxcvbnM'; // ใส่ Verify Token ที่คุณตั้งเอง
 
 if (!PAGE_ACCESS_TOKEN || !VERIFY_TOKEN) {
