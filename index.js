@@ -1,12 +1,13 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const request = require("request");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Page Access Token และ Verify Token
-const PAGE_ACCESS_TOKEN = "EAASuwMj9bwUBO5fhyDI5cBJly7mhDLEfXpxu7Ecguz8ajSB9FUX9McbZCo4Jw2dQHn6p0BoWglMURV1ZA31qZCZCivxf6jYW4ZAzXQRih7LTs8EbRlBmnNpWwuXlzZBtP4e6jHPeA1qzvZCHceI5ZADSkaj5ZCxXlMXnBph8ZA9I5MUdhRiZCPvs2tftrIoPwqZBVx6oJAZDZD"; // ใส่ Page Access Token จาก Facebook Developer
-const VERIFY_TOKEN = "xcxc1"; // ตั้งค่า Verify Token ที่คุณต้องการ
+const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN || "EAASuwMj9bwUBO7yjOQpz47hfXKF67mcX5HegUoU5VLGxetm7DbMYnS1vHLHXreVF21w5BlZC6XLLg8eaKZBufFGZBeT1WgShZBD0Qk70l9aZCWNFnUEQpNZAUuB2KZCHYXKi09V0mIOh8bTmSTwMaSxJTKCVqopEZCB4B1QlV09ReZAhte9VLXWtbnvNU8aL0u3vQaQZDZD"; // ใช้ Environment Variables หรือใส่ค่าเอง
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "xcxc1";
 
 // Middleware
 app.use(bodyParser.json());
@@ -19,6 +20,11 @@ app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
+
+  if (!mode || !token || !challenge) {
+    console.log("Missing query parameters");
+    return res.status(400).send("Bad Request: Missing query parameters");
+  }
 
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
     console.log("Webhook verified successfully!");
@@ -62,7 +68,6 @@ app.post("/webhook", (req, res) => {
 
 // ฟังก์ชันส่งข้อความกลับไปยังผู้ใช้
 function sendMessage(senderId, message) {
-  const request = require("request");
   const url = `https://graph.facebook.com/v12.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
 
   const payload = {
