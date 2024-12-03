@@ -1,108 +1,92 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const axios = require('axios'); // ใช้ axios แทน request
+const express = require("express");
+const bodyParser = require("body-parser");
 
-// ใส่ค่าโทเค็นของคุณตรงนี้
-const PAGE_ACCESS_TOKEN = 'EAARffjvaCwoBO9UuWZA7XRCJBbEcAgXTqRT7Ok0oItyKZBcqarowmHbwteydKFo6Vmq8SUyxnBED821rvTfrdIM8UBsKuzhNT2ZCKBTQSlUmOYC1ZC2vBMR7ApTk24K06woBaikVZC0PIvc3nuZBqPP3IRggzdp7gIUVGCmZAaNq8JOjnQpi1dlrqrppA6cNhunSwZDZD'; // ใส่ Page Access Token ของคุณที่นี่
-const VERIFY_TOKEN = 'zxcvbnM'; // ใส่ Verify Token ที่คุณตั้งเอง
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-if (!PAGE_ACCESS_TOKEN || !VERIFY_TOKEN) {
-    console.error('Missing PAGE_ACCESS_TOKEN or VERIFY_TOKEN in the code.');
-    process.exit(1);
-}
+// Page Access Token และ Verify Token
+const PAGE_ACCESS_TOKEN = "EAASuwMj9bwUBO5fhyDI5cBJly7mhDLEfXpxu7Ecguz8ajSB9FUX9McbZCo4Jw2dQHn6p0BoWglMURV1ZA31qZCZCivxf6jYW4ZAzXQRih7LTs8EbRlBmnNpWwuXlzZBtP4e6jHPeA1qzvZCHceI5ZADSkaj5ZCxXlMXnBph8ZA9I5MUdhRiZCPvs2tftrIoPwqZBVx6oJAZDZD"; // ใส่ Page Access Token จาก Facebook Developer
+const VERIFY_TOKEN = "xcxc1"; // ตั้งค่า Verify Token ที่คุณต้องการ
 
-const app = express().use(bodyParser.json());
+// Middleware
+app.use(bodyParser.json());
 
-// เส้นทางหลัก (สำหรับการตรวจสอบเซิร์ฟเวอร์)
-app.get('/', (req, res) => {
-    res.send('บอทเฟสบุ๊คกำลังทำงาน!');
+// Route สำหรับ Verify Webhook
+app.get("/webhook", (req, res) => {
+  console.log("GET request received:", req.query); // Debugging
+
+  // ตรวจสอบ Verify Token
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("Webhook verified successfully!");
+    res.status(200).send(challenge); // ส่ง hub.challenge กลับ
+  } else {
+    console.log("Verification token mismatch!");
+    res.status(403).send("Verification token mismatch");
+  }
 });
 
-// ตั้งค่า webhook
-app.get('/webhook', (req, res) => {
-    const mode = req.query['hub.mode'];
-    const token = req.query['hub.verify_token'];
-    const challenge = req.query['hub.challenge'];
+// Route สำหรับรับข้อความจาก Messenger
+app.post("/webhook", (req, res) => {
+  console.log("POST request received:", req.body); // Debugging
 
-    if (mode && token) {
-        if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-            console.log('WEBHOOK_VERIFIED');
-            res.status(200).send(challenge);
-        } else {
-            res.sendStatus(403);
-        }
-    }
+  const body = req.body;
+
+  // ตรวจสอบว่าเป็น event จาก Messenger
+  if (body.object === "page") {
+    body.entry.forEach((entry) => {
+      // รับข้อความจากผู้ใช้
+      const webhookEvent = entry.messaging[0];
+      console.log("Webhook event:", webhookEvent);
+
+      const senderId = webhookEvent.sender.id;
+      const message = webhookEvent.message;
+
+      if (message && message.text) {
+        // ตอบกลับข้อความผู้ใช้
+        const responseMessage = "เงินคุณไม่มีครับ";
+        sendMessage(senderId, responseMessage);
+      }
+    });
+
+    // ตอบกลับสถานะ 200 ให้ Facebook
+    res.status(200).send("EVENT_RECEIVED");
+  } else {
+    // ไม่ใช่ event จาก Messenger
+    res.status(404).send("Not Found");
+  }
 });
 
-// รับข้อความจากผู้ใช้
-app.post('/webhook', (req, res) => {
-    const body = req.body;
+// ฟังก์ชันส่งข้อความกลับไปยังผู้ใช้
+function sendMessage(senderId, message) {
+  const request = require("request");
+  const url = `https://graph.facebook.com/v12.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`;
 
-    // ส่ง 200 OK ทันที
-    res.status(200).send('EVENT_RECEIVED');
+  const payload = {
+    recipient: { id: senderId },
+    message: { text: message },
+  };
 
-    if (body.object === 'page') {
-        body.entry.forEach(function(entry) {
-            const webhook_event = entry.messaging[0];
-            console.log('Webhook Event:', JSON.stringify(webhook_event, null, 2));
-
-            const sender_psid = webhook_event.sender.id;
-            console.log('Sender PSID:', sender_psid);
-
-            if (webhook_event.message) {
-                handleMessage(sender_psid, webhook_event.message);
-            } else if (webhook_event.postback) {
-                handlePostback(sender_psid, webhook_event.postback);
-            }
-        });
+  request.post(
+    {
+      url: url,
+      json: true,
+      body: payload,
+    },
+    (error, response, body) => {
+      if (!error && response.statusCode === 200) {
+        console.log("Message sent successfully:", body);
+      } else {
+        console.error("Error sending message:", error || body);
+      }
     }
+  );
+}
+
+// เริ่มเซิร์ฟเวอร์
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
-
-// ฟังก์ชันจัดการข้อความ
-function handleMessage(sender_psid, received_message) {
-    let response;
-
-    if (received_message.text) {
-        const message_text = received_message.text.trim();
-
-        if (message_text === '/เงิน') {
-            response = { "text": "เงินของคุณคือ0บาท" };
-        } else {
-            response = { "text": "ขอโทษครับ ฉันไม่เข้าใจคำสั่งนั้น" };
-        }
-    }
-
-    callSendAPI(sender_psid, response);
-}
-
-// ฟังก์ชันจัดการ postback (ถ้ามี)
-function handlePostback(sender_psid, received_postback) {
-    // คุณสามารถเพิ่มการจัดการ postback ได้ที่นี่
-}
-
-// ฟังก์ชันส่งข้อความกลับไปยังผู้ใช้ด้วย axios
-async function callSendAPI(sender_psid, response) {
-    const request_body = {
-        "recipient": {
-            "id": sender_psid
-        },
-        "message": response
-    };
-
-    try {
-        const res = await axios.post(`https://graph.facebook.com/v17.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, request_body);
-        console.log('ส่งข้อความสำเร็จ!', res.data);
-    } catch (error) {
-        if (error.response) {
-            console.error('Error response from Facebook API:', error.response.data);
-        } else if (error.request) {
-            console.error('No response received:', error.request);
-        } else {
-            console.error('Error setting up request:', error.message);
-        }
-    }
-}
-
-// เริ่มต้นเซิร์ฟเวอร์
-const PORT = process.env.PORT || 10000; // Render.com ใช้พอร์ต 10000 โดยปกติ
-app.listen(PORT, () => console.log(`เซิร์ฟเวอร์กำลังทำงานบนพอร์ต ${PORT}`));
